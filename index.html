@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<!-- ==========================================================================
+     ไฟล์: index.html
+     คำอธิบาย: หน้าจอหลักของเกมเศรษฐี (Monopoly - Line Let's Get Rich Style)
+     มาตรฐาน: HTML Living Standard (HTML5)
+     ปรับปรุง: กำจัด AI Slop ตามมาตรฐาน Impeccable, เพิ่มระบบ QOL และปรับปรุงประสิทธิภาพ
+     ผู้เขียน: ผู้สอน Front-end สำหรับผู้เริ่มต้น
+     ========================================================================== -->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monopoly - เกมเศรษฐี (Line Let's Get Rich Style)</title>
+  <link rel="icon" type="image/x-icon" href="Assets/Images/favicon.ico">
+
+  <!-- นำเข้าสไตล์ชีต CSS3 ที่ปรับปรุงใหม่ทั้งหมด -->
+  <link rel="stylesheet" href="src/css/style.css">
+  <link rel="stylesheet" href="src/css/board.css">
+  <link rel="stylesheet" href="src/css/profile.css">
+  <link rel="stylesheet" href="src/css/ui.css">
+</head>
+<body>
+
+  <!-- คอนเทนเนอร์หลักของเกมเศรษฐี (Game App Container) -->
+  <main id="game-app">
+
+    <!-- บรรยากาศพื้นหลัง (ไม่มี filter: blur เพื่อลดภาระ GPU) -->
+    <div class="ambient-lighting" aria-hidden="true"></div>
+
+    <!-- ----------------------------------------------------------------------
+         1. แถบสถานะด้านบน (Top Game Header & QOL Bar)
+         ---------------------------------------------------------------------- -->
+    <header class="game-header">
+      <div class="header-item" title="เวลาในเกม">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        <span id="game-timer" class="value">18:00</span>
+      </div>
+      <div class="header-divider"></div>
+      <div class="header-item" title="รอบเทิร์น">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1c1.94-.41 3.48-1.89 3.61-3.96C19.08 11.63 21 9.55 21 7V5c0-1.1-.9-2-2-2zm-14 3V7h2v3.8c-1.21-.42-2-1.52-2-2.8zm14 0c0 1.28-.79 2.38-2 2.8V7h2v1z"/></svg>
+        <span id="turn-counter" class="value">รอบที่ 1</span>
+      </div>
+      <div class="header-divider"></div>
+      
+      <!-- ตัวเลือกปรับความเร็วเกม (Speed Control QOL: 1x, 2x, 3x) -->
+      <div class="header-actions" title="ปรับความเร็วแอนิเมชันและรอบเดิน">
+        <button class="speed-toggle-btn active-speed" data-speed="1" aria-label="Normal Speed">1x</button>
+        <button class="speed-toggle-btn" data-speed="2" aria-label="Fast Speed 2x">2x</button>
+        <button class="speed-toggle-btn" data-speed="3" aria-label="Turbo Speed 3x">3x</button>
+        <!-- ปุ่มเปิด/ปิดเสียง -->
+        <button id="mute-btn" class="icon-btn" title="เปิด/ปิดเสียง" aria-label="Toggle Sound">
+          <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </button>
+        <!-- ปุ่มออกจากเกมกลับสู่ล็อบบี้ -->
+        <button id="exit-btn" class="icon-btn" title="ออกจากเกม" aria-label="Exit Game">
+          <svg viewBox="0 0 24 24"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ----------------------------------------------------------------------
+         2. กล่องตรวจดูรายละเอียดช่อง (Tile Inspector Popover - QOL)
+         ---------------------------------------------------------------------- -->
+    <div id="tile-inspector" class="tile-inspector" aria-live="polite">ชี้ที่ช่องเพื่อตรวจดูรายละเอียด</div>
+
+    <!-- ----------------------------------------------------------------------
+         3. โปรไฟล์ผู้เล่น 4 คน 4 มุมจอ ตามโจทย์
+         ---------------------------------------------------------------------- -->
+
+    <!-- [มุมซ้ายบน] ผู้เล่นคนที่ 1 (Player 1) -->
+    <section class="player-profile-card profile-top-left active-turn" id="profile-p1" aria-label="โปรไฟล์ผู้เล่นคนที่ 1">
+      <div class="profile-rank-badge rank-1" title="อันดับที่ 1">1</div>
+      <div class="profile-avatar-wrapper" style="color: var(--p1-color);">
+        <svg viewBox="0 0 24 24" class="avatar-icon-svg"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>
+      </div>
+      <div class="profile-info">
+        <div class="profile-username">ผู้เล่น (P1)</div>
+        <div class="profile-finances">
+          <div class="finance-row">
+            <span class="cash-amount">20M</span>
+          </div>
+          <div class="finance-row">
+            <span class="net-worth-amount">รวม 20M</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [มุมขวาบน] ผู้เล่นคนที่ 2 (Player 2) -->
+    <section class="player-profile-card profile-top-right" id="profile-p2" aria-label="โปรไฟล์ผู้เล่นคนที่ 2">
+      <div class="profile-rank-badge rank-2" title="อันดับที่ 2">2</div>
+      <div class="profile-avatar-wrapper" style="color: var(--p2-color);">
+        <svg viewBox="0 0 24 24" class="avatar-icon-svg"><path d="M12 2a2 2 0 0 1 2 2c0 .7-.4 1.4-1 1.7V7h4a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4V5.7c-.6-.3-1-1-1-1.7a2 2 0 0 1 2-2zm-3 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm6 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM8 15h8v-1H8v1z"/></svg>
+      </div>
+      <div class="profile-info">
+        <div class="profile-username">บอทบิลลี่</div>
+        <div class="profile-finances">
+          <div class="finance-row">
+            <span class="cash-amount">20M</span>
+          </div>
+          <div class="finance-row">
+            <span class="net-worth-amount">รวม 20M</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [มุมล่างซ้าย] ผู้เล่นคนที่ 3 (Player 3) -->
+    <section class="player-profile-card profile-bottom-left" id="profile-p3" aria-label="โปรไฟล์ผู้เล่นคนที่ 3">
+      <div class="profile-rank-badge rank-3" title="อันดับที่ 3">3</div>
+      <div class="profile-avatar-wrapper" style="color: var(--p3-color);">
+        <svg viewBox="0 0 24 24" class="avatar-icon-svg"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.5 3 8.3 7 9.5V22h6v-.5c4-1.2 7-5 7-9.5 0-5.5-4.5-10-10-10zm-3 8a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-3 6c1.7 0 3-.7 3-1.5h-6c0 .8 1.3 1.5 3 1.5z"/></svg>
+      </div>
+      <div class="profile-info">
+        <div class="profile-username">บอทนาเดีย</div>
+        <div class="profile-finances">
+          <div class="finance-row">
+            <span class="cash-amount">20M</span>
+          </div>
+          <div class="finance-row">
+            <span class="net-worth-amount">รวม 20M</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [มุมล่างขวา] ผู้เล่นคนที่ 4 (Player 4) -->
+    <section class="player-profile-card profile-bottom-right" id="profile-p4" aria-label="โปรไฟล์ผู้เล่นคนที่ 4">
+      <div class="profile-rank-badge rank-4" title="อันดับที่ 4">4</div>
+      <div class="profile-avatar-wrapper" style="color: var(--p4-color);">
+        <svg viewBox="0 0 24 24" class="avatar-icon-svg"><path d="M12 2.5s4 3.5 4 8.5c0 2.5-1 4.5-2 5.5l1 4.5-3-2-3 2 1-4.5c-1-1-2-3-2-5.5 0-5 4-8.5 4-8.5zM9 10a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/></svg>
+      </div>
+      <div class="profile-info">
+        <div class="profile-username">บอทเจมส์</div>
+        <div class="profile-finances">
+          <div class="finance-row">
+            <span class="cash-amount">20M</span>
+          </div>
+          <div class="finance-row">
+            <span class="net-worth-amount">รวม 20M</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------------------
+         4. กระดานเกม 2.5D Isometric (Line เกมเศรษฐี)
+         ---------------------------------------------------------------------- -->
+    <div class="board-viewport">
+      <div class="board-isometric-wrapper">
+        <div class="board-base"></div>
+        <div class="board-grid" id="board-grid">
+          <div class="board-center">
+            <div class="center-holo-ring"></div>
+            <div class="center-holo-core">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         5. คอนโซลควบคุมลูกเต๋า (Dice Controls)
+         ---------------------------------------------------------------------- -->
+    <div class="dice-control-area">
+      <div id="double-badge" class="double-dice-badge" style="display: none;">เต๋าคู่ดับเบิ้ล!</div>
+
+      <div class="dice-container">
+        <div class="die" id="die-1" aria-label="ลูกเต๋าที่ 1">
+          <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+          <div class="pip"></div><div class="pip visible"></div><div class="pip"></div>
+          <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+        </div>
+        <div class="die" id="die-2" aria-label="ลูกเต๋าที่ 2">
+          <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+          <div class="pip"></div><div class="pip visible"></div><div class="pip"></div>
+          <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+        </div>
+      </div>
+
+      <button id="roll-btn" class="roll-dice-btn" title="กดทอยลูกเต๋า หรือกดปุ่ม Spacebar">
+        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM7.5 18a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0-9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.5 4.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.5 4.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm0-9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+        ทอยลูกเต๋า [Space]
+      </button>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         6. บันทึกประวัติการเดินและธุรกรรม (Game Event Log Drawer - QOL)
+         ---------------------------------------------------------------------- -->
+    <aside id="event-log-drawer" class="event-log-drawer collapsed">
+      <div id="event-log-toggle" class="event-log-header">
+        <span>📜 ประวัติการเดิน (Event Log)</span>
+        <span style="font-size: 0.75rem; color: var(--accent-cyan);">คลิกเพื่อเปิด/ปิด</span>
+      </div>
+      <div id="event-log-list" class="event-log-list"></div>
+    </aside>
+
+    <!-- ----------------------------------------------------------------------
+         7. หน้าต่างแจ้งเตือน Toast Message
+         ---------------------------------------------------------------------- -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- ----------------------------------------------------------------------
+         8. หน้าต่างโมดอลแบบไดนามิก (ซื้อที่ดิน, เทคโอเวอร์, การ์ดดวง, จบเกม)
+         ---------------------------------------------------------------------- -->
+    <div id="game-modal" class="game-modal-overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal-content">
+        <h2 id="modal-title" class="modal-header">หัวข้อโมดอล</h2>
+        <p id="modal-subtitle" class="modal-subtitle">รายละเอียดเพิ่มเติม</p>
+        <div id="modal-body"></div>
+        <div class="modal-actions">
+          <button id="modal-btn-confirm" class="modal-btn-confirm">ยืนยัน</button>
+          <button id="modal-btn-cancel" class="modal-btn-cancel">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------------
+         9. หน้าจอเมนูล็อบบี้ (Lobby & Room Selection Overlay)
+         ---------------------------------------------------------------------- -->
+    <div id="lobby-overlay" class="lobby-overlay" role="dialog" aria-modal="true">
+      <div class="lobby-card">
+        <h1 class="lobby-title">MONOPOLY</h1>
+        <p class="lobby-subtitle">เกมเศรษฐีออนไลน์ - Line Let's Get Rich Style</p>
+
+        <div class="form-group">
+          <label for="username-input">ชื่อผู้เล่น (Username):</label>
+          <input type="text" id="username-input" class="form-input" placeholder="ระบุชื่อของคุณ..." value="ผู้เล่นใหม่" maxlength="15">
+        </div>
+
+        <div class="form-group">
+          <label for="roomcode-input">รหัสห้อง (สำหรับเข้าร่วมห้องเพื่อน):</label>
+          <input type="text" id="roomcode-input" class="form-input" placeholder="เช่น ABCD" maxlength="6" style="text-transform: uppercase;">
+        </div>
+
+        <div class="lobby-btn-group">
+          <button id="play-solo-btn" class="btn-primary">🎮 เล่นคนเดียว (แข่งกับบอท 3 คน)</button>
+          <button id="create-room-btn" class="btn-secondary">🌐 สร้างห้องออนไลน์ (Create Room)</button>
+          <button id="join-room-btn" class="btn-secondary">🔗 เข้าร่วมห้องเพื่อน (Join Room)</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>

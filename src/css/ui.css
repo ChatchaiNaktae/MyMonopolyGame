@@ -1,0 +1,330 @@
+/* ==========================================================================
+   ไฟล์: src/css/ui.css
+   คำอธิบาย: สไตล์ของลูกเต๋า 3D, โมดอล (Modals), แผงควบคุม, Toast และเอฟเฟกต์
+   ปรับปรุง: แก้ไขปัญหา AI Slop (ลบ Bounce Easing, ลบ Glow Halo), ปรับปรุงความลื่นไหล
+   ผู้เขียน: ผู้สอน Front-end สำหรับผู้เริ่มต้น
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. แผงควบคุมลูกเต๋าตรงกลาง (Dice Controls)
+   -------------------------------------------------------------------------- */
+.dice-control-area {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 60;
+  contain: layout style;
+}
+
+.dice-container {
+  display: flex;
+  gap: 14px;
+}
+
+/* ลูกเต๋าสามมิติ */
+.die {
+  width: 50px;
+  height: 50px;
+  background: #102136;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 6px;
+  will-change: transform;
+}
+
+.pip {
+  background: var(--accent-cyan);
+  border-radius: 50%;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  visibility: hidden;
+}
+
+.pip.visible {
+  visibility: visible;
+}
+
+/* อนิเมชันการทอยลูกเต๋า (ปรับความเร็วตาม QOL Setting) */
+.die.rolling {
+  animation: diceRollSmooth calc(0.45s * var(--anim-speed)) linear infinite;
+}
+
+@keyframes diceRollSmooth {
+  0% { transform: rotate(0deg) scale(0.95); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(0.95); }
+}
+
+/* ปุ่มทอยลูกเต๋า */
+.roll-dice-btn {
+  background: #f59e0b;
+  color: #111827;
+  border: none;
+  font-family: var(--font-main);
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 10px 32px;
+  border-radius: 24px;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roll-dice-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  opacity: 0.95;
+}
+
+.roll-dice-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.roll-dice-btn:disabled {
+  background: #334155;
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ป้ายเต๋าคู่ (Double Dice Badge) */
+.double-dice-badge {
+  position: absolute;
+  top: -26px;
+  background: var(--p1-color);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  animation: badgeIn 0.2s var(--ease-out-expo);
+}
+
+@keyframes badgeIn {
+  from { transform: translateY(4px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   2. หน้าต่างโมดอลแบบต่างๆ (Modals System)
+   -------------------------------------------------------------------------- */
+.game-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 16, 0.88);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.game-modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.modal-content {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  padding: 24px;
+  width: 90%;
+  max-width: 430px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  animation: modalEnter 0.25s var(--ease-out-expo);
+}
+
+@keyframes modalEnter {
+  0% { transform: scale(0.94); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.modal-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+/* ตัวเลือกสร้างสิ่งปลูกสร้าง (Building Grid) */
+.building-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.build-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.build-card:hover:not(.disabled) {
+  border-color: var(--accent-mint);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.build-card.selected {
+  border-color: var(--accent-gold);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.build-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.build-icon-svg {
+  width: 28px;
+  height: 28px;
+  fill: currentColor;
+  margin-bottom: 6px;
+}
+
+.build-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.build-cost {
+  font-size: 0.75rem;
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+/* ปุ่มกดยืนยัน / ยกเลิก */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.modal-btn-confirm {
+  flex: 1;
+  background: var(--accent-mint);
+  color: #03141f;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.modal-btn-confirm:hover {
+  opacity: 0.92;
+}
+
+.modal-btn-cancel {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.modal-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   3. เอฟเฟกต์เงินลอย (Floating Cash Indicator)
+   -------------------------------------------------------------------------- */
+.floating-cash {
+  position: absolute;
+  font-size: 1.1rem;
+  font-weight: 900;
+  pointer-events: none;
+  z-index: 80;
+  animation: floatUpSmooth calc(1.2s * var(--anim-speed)) var(--ease-out-expo) forwards;
+}
+
+.floating-cash.gain {
+  color: var(--accent-mint);
+}
+
+.floating-cash.loss {
+  color: var(--danger);
+}
+
+@keyframes floatUpSmooth {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { transform: translateY(-8px); opacity: 1; }
+  75% { transform: translateY(-30px); opacity: 1; }
+  100% { transform: translateY(-45px); opacity: 0; }
+}
+
+/* --------------------------------------------------------------------------
+   4. หน้าต่างแจ้งเตือน Toast Message
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.toast-msg {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: var(--shadow-md);
+  animation: toastSmooth 0.22s var(--ease-out-expo);
+}
+
+@keyframes toastSmooth {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

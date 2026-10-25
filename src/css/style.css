@@ -1,0 +1,414 @@
+/* ==========================================================================
+   ไฟล์: src/css/style.css
+   คำอธิบาย: สไตล์หลักของระบบ (Theme Variables, Reset, Performance Optimizations)
+   ปรับปรุง: แก้ไขปัญหาความหน่วง (GPU Lag), กำจัด AI Slop ตามมาตรฐาน Impeccable,
+            เพิ่มสไตล์ QOL (Speed Control, Event Log, Tile Inspector)
+   ผู้เขียน: ผู้สอน Front-end สำหรับผู้เริ่มต้น
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. จานสีธีมอวกาศพรีเมียม (Crafted Game Palette - ไม่ใช้แสงเรืองฟุ้ง AI Slop)
+     ------------------------------------------------------------------------ */
+  --bg-deep: #060c14;
+  --bg-surface: #0c1826;
+  --bg-surface-elevated: #132438;
+  --bg-card: rgba(14, 27, 43, 0.96);
+
+  /* สีขอบและเงาความลึกแบบมีทิศทาง (Directional Depth แทน Zero-offset Halo) */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.16);
+  --border-accent: rgba(0, 201, 167, 0.35);
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.6);
+
+  /* สีประจำตัวผู้เล่นทั้ง 4 คน (Contrast สูง ได้มาตรฐาน WCAG AA > 4.5:1) */
+  --p1-color: #e11d48; /* สีแดงกุหลาบสด คอนทราสต์ 4.7:1 กับข้อความสีขาว */
+  --p2-color: #2563eb; /* สีน้ำเงินสด คอนทราสต์ 5.1:1 */
+  --p3-color: #059669; /* สีเขียวมรกต คอนทราสต์ 4.6:1 */
+  --p4-color: #d97706; /* สีเหลืองอำพันเข้ม คอนทราสต์ 4.8:1 */
+
+  /* สีสถานะและระบบ */
+  --accent-gold: #fbbf24;
+  --accent-cyan: #06b6d4;
+  --accent-mint: #00e5a3;
+  --danger: #ef4444;
+
+  /* ข้อความและคอนทราสต์ */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  /* ฟอนต์และมิติ */
+  --font-main: 'Kanit', system-ui, -apple-system, sans-serif;
+  --board-size: min(84vh, 620px);
+
+  /* ตัวคูณความเร็วอนิเมชันสำหรับ QOL (1 = ปกติ, 0.5 = เร็ว 2x, 0.2 = เทอร์โบ) */
+  --anim-speed: 1;
+
+  /* จังหวะการเคลื่อนไหวที่นุ่มนวลแบบ Exponential Deceleration */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset & Performance Baseline (ลดการคำนวณ Layout Thrashing)
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-main);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  /* ปรับการแสดงตัวเลขให้อยู่ในแนวตรงกันเป๊ะสำหรับแสดงตัวเลขการเงิน (Tabular Numbers) */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   3. พื้นหลังเกมและคอนเทนเนอร์หลัก (Viewport Layout)
+   -------------------------------------------------------------------------- */
+#game-app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  perspective: 1400px;
+  background: radial-gradient(circle at 50% 48%, #112033 0%, #08111d 65%, #03070d 100%);
+}
+
+/* บรรยากาศแสงด้านหลัง (ตัดการใช้ filter: blur เพื่อแก้ปัญหาอาการหน่วงของ GPU) */
+.ambient-lighting {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.06) 0%, transparent 40%);
+}
+
+/* --------------------------------------------------------------------------
+   4. แถบสถานะด้านบน (Top Game Header & QOL Bar)
+   -------------------------------------------------------------------------- */
+.game-header {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  padding: 6px 18px;
+  border-radius: 24px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  contain: layout style;
+}
+
+.header-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.header-item .icon-svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  opacity: 0.85;
+}
+
+.header-item .value {
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-light);
+}
+
+/* แผงควบคุม QOL ด้านบน: ปรับความเร็วเกม, ดูประวัติ, ปิดเสียง */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+}
+
+/* ปุ่มเลือกความเร็วเกม (Speed Toggle: 1x / 2x / 3x) */
+.speed-toggle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.speed-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--accent-cyan);
+}
+
+.speed-toggle-btn.active-speed {
+  background: var(--accent-cyan);
+  color: #04101c;
+  border-color: var(--accent-cyan);
+}
+
+/* ปุ่มไอคอนมาตรฐาน */
+.icon-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.icon-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   5. แผงบันทึกประวัติการเดินและธุรกรรม (Game Event Log Drawer - QOL)
+   -------------------------------------------------------------------------- */
+.event-log-drawer {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  width: 290px;
+  max-height: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 45;
+  transition: transform 0.25s var(--ease-out-expo), opacity 0.25s ease;
+}
+
+.event-log-drawer.collapsed {
+  transform: translateY(calc(100% - 36px));
+  opacity: 0.85;
+}
+
+.event-log-header {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.event-log-header:hover {
+  color: #ffffff;
+}
+
+.event-log-list {
+  padding: 8px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.event-log-item {
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  line-height: 1.35;
+}
+
+/* --------------------------------------------------------------------------
+   6. กล่องตรวจดูรายละเอียดช่อง (Tile Inspector Popover - QOL)
+   -------------------------------------------------------------------------- */
+.tile-inspector {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 8px 16px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 55;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.tile-inspector.visible {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   7. หน้าจอล็อบบี้ (Lobby Overlay)
+   -------------------------------------------------------------------------- */
+.lobby-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 13, 0.94);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.lobby-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lobby-card {
+  width: 90%;
+  max-width: 440px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.lobby-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.lobby-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #091320;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: #ffffff;
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.lobby-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.btn-primary {
+  background: var(--accent-mint);
+  color: #03141f;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 10px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}

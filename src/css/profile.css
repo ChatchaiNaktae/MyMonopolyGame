@@ -1,0 +1,222 @@
+/* ==========================================================================
+   ไฟล์: src/css/profile.css
+   คำอธิบาย: สไตล์การ์ดโปรไฟล์ผู้เล่น 4 มุมจอ (ซ้ายบน, ขวาบน, ล่างซ้าย, ล่างขวา)
+   ปรับปรุง: ลบ side-tab 4px (AI Slop tell), แก้ไข Low Contrast, ลบ backdrop-filter เพื่อความลื่นไหล
+   ผู้เขียน: ผู้สอน Front-end สำหรับผู้เริ่มต้น
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. โครงสร้างการ์ดโปรไฟล์หลัก (Game HUD Player Card)
+   -------------------------------------------------------------------------- */
+.player-profile-card {
+  position: absolute;
+  width: 250px;
+  height: 68px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 10px;
+  z-index: 40;
+  contain: layout style;
+  transition: transform 0.2s var(--ease-out-expo), border-color 0.2s ease;
+}
+
+/* --------------------------------------------------------------------------
+   2. ตำแหน่ง 4 มุมจอตามโจทย์ (4 Screen Corners)
+   -------------------------------------------------------------------------- */
+/* มุมซ้ายบน: ผู้เล่นคนที่ 1 (Player 1) */
+.profile-top-left {
+  top: 18px;
+  left: 18px;
+}
+
+/* มุมขวาบน: ผู้เล่นคนที่ 2 (Player 2) */
+.profile-top-right {
+  top: 18px;
+  right: 18px;
+  flex-direction: row-reverse;
+}
+
+/* มุมล่างซ้าย: ผู้เล่นคนที่ 3 (Player 3) */
+.profile-bottom-left {
+  bottom: 18px;
+  left: 18px;
+}
+
+/* มุมล่างขวา: ผู้เล่นคนที่ 4 (Player 4) */
+.profile-bottom-right {
+  bottom: 18px;
+  right: 18px;
+  flex-direction: row-reverse;
+}
+
+/* --------------------------------------------------------------------------
+   3. องค์ประกอบภายในโปรไฟล์ (Rank, Avatar, Username, Finances)
+   -------------------------------------------------------------------------- */
+/* ป้ายแสดงอันดับในตาราง (Rank Badge คอนทราสต์สูง ผ่านมาตรฐาน WCAG AA) */
+.profile-rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f59e0b; /* อันดับ 1 ทอง */
+  color: #111827;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-rank-badge.rank-2 {
+  background: #e2e8f0; /* อันดับ 2 เงิน */
+  color: #0f172a;
+}
+
+.profile-rank-badge.rank-3 {
+  background: #92400e; /* อันดับ 3 ทองแดง */
+  color: #ffffff;
+}
+
+.profile-rank-badge.rank-4 {
+  background: #475569; /* อันดับ 4 เทาเข้ม */
+  color: #f8fafc;
+}
+
+/* กรอบรูปอวตาร (Avatar Frame) พร้อมแถบสีประจำตัวที่ตัวกรอบ */
+.profile-avatar-wrapper {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #112033;
+  border: 2px solid var(--border-light);
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.profile-top-left .profile-avatar-wrapper { border-color: var(--p1-color); }
+.profile-top-right .profile-avatar-wrapper { border-color: var(--p2-color); }
+.profile-bottom-left .profile-avatar-wrapper { border-color: var(--p3-color); }
+.profile-bottom-right .profile-avatar-wrapper { border-color: var(--p4-color); }
+
+.avatar-icon-svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+/* ข้อมูลผู้เล่น */
+.profile-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.profile-top-right .profile-info,
+.profile-bottom-right .profile-info {
+  text-align: right;
+}
+
+.profile-username {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+/* แถบการเงิน */
+.profile-finances {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.finance-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem; /* ไม่ต่ำกว่า 12px */
+}
+
+.profile-top-right .finance-row,
+.profile-bottom-right .finance-row {
+  justify-content: flex-end;
+}
+
+.cash-amount {
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.net-worth-amount {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   4. สถานะเทิร์นของผู้เล่น (Active Turn Indicator)
+   -------------------------------------------------------------------------- */
+.player-profile-card.active-turn {
+  transform: translateY(-2px);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--shadow-lg);
+  outline: 1px solid var(--accent-cyan);
+}
+
+.player-profile-card.active-turn::after {
+  content: "ตาของคุณ";
+  position: absolute;
+  top: -9px;
+  background: var(--accent-cyan);
+  color: #03121f;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
+.profile-top-left.active-turn::after,
+.profile-bottom-left.active-turn::after {
+  left: 14px;
+}
+
+.profile-top-right.active-turn::after,
+.profile-bottom-right.active-turn::after {
+  right: 14px;
+}
+
+/* ผู้เล่นล้มละลาย (Bankrupted) */
+.player-profile-card.bankrupted {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.player-profile-card.bankrupted::after {
+  content: "ล้มละลาย";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  background: var(--danger);
+  color: #ffffff;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  box-shadow: var(--shadow-md);
+}
